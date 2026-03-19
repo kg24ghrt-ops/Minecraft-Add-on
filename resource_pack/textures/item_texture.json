@@ -1,0 +1,12 @@
+{
+  "resource_pack_name": "CustomPistolRP",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "pistol_tex": {
+      "textures": "textures/items/pistol"
+    },
+    "bullet_tex": {
+      "textures": "textures/items/bullet"
+    }
+  }
+}

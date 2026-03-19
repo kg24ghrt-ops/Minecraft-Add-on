@@ -1,0 +1,23 @@
+{
+  "plugin": "org.smartide.plugin.nodejs",
+  "run": "npm start",
+  "gui": false,
+  "intelligence": {
+    ".json": {
+      "enabled": true,
+      "run": "vscode-json-language-server --stdio"
+    },
+    ".yml": {
+      "enabled": false,
+      "run": "yaml-language-server --stdio"
+    },
+    ".py": {
+      "enabled": true,
+      "run": "pylsp"
+    },
+    ".ts": {
+      "enabled": true,
+      "run": "typescript-language-server --stdio"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "format_version": "1.21.0",
+  "minecraft:item": {
+    "description": {
+      "identifier": "custom:pistol",
+      "category": "equipment"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "pistol_tex"
+      },
+      "minecraft:render_offsets": "tools"
+    }
+  }
+}

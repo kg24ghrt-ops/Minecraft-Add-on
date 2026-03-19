@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Custom Pistol RP",
+    "description": "Texturing for the Tactical Pistol and Bullet",
+    "uuid": "d5e6f7a8-b9c0-4d1e-8f2g-3h4i5j6k7l8m",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "description": "Resource Pack Module",
+      "type": "resources",
+      "uuid": "e6f7g8h9-i0j1-4k2l-8m3n-4o5p6q7r8s9t",
+      "version": [1, 0, 0]
+    }
+  ]
+}

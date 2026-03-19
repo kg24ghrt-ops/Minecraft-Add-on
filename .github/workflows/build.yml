@@ -1,0 +1,63 @@
+name: Build Minecraft Addon
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Node.js (for TypeScript)
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      # 3️⃣ Install / update TypeScript and Minecraft types
+      - name: Install TypeScript + Minecraft API types
+        run: |
+          npm install typescript@latest --save-dev
+          npm install @minecraft/bedrock-types@latest --save-dev
+
+      # 4️⃣ Run TypeScript type check
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      # 5️⃣ Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # 6️⃣ Install Python dependencies
+      - name: Install Python dependencies
+        run: pip install pillow rembg
+
+      # 7️⃣ Convert AI images → Minecraft textures & validate
+      - name: Convert textures & validate add-on
+        run: python tools/convert_and_check.py
+
+      # 8️⃣ Debug: show generated files
+      - name: Show generated files
+        run: ls -R resource_pack
+
+      # 9️⃣ Package .mcpack
+      - name: Package addon
+        run: |
+          mkdir -p build
+          cp -r resource_pack build/
+          cd build
+          zip -r ../addon.mcpack .
+
+      # 🔟 Upload artifact
+      - name: Upload mcpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: minecraft-addon
+          path: addon.mcpack

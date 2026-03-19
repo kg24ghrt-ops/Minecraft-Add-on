@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "bc-minecraft-bedrock-types": "^1.22.6-3",
+    "typescript": "^5.9.3"
+  }
+}

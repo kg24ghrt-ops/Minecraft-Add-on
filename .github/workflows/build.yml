@@ -9,64 +9,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repository
+      # 1. Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js (for TypeScript)
+      # 2. Setup Node.js (for TypeScript)
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
 
-      # 3️⃣ Install TypeScript + Bedrock TS types
-      - name: Install TypeScript & Bedrock types
-        run: |
-          npm install typescript@latest --save-dev
-          npm install bc-minecraft-bedrock-types --save-dev
+      # 3. Install TypeScript
+      - name: Install TypeScript
+        run: npm install typescript@latest --save-dev
 
-      # 4️⃣ Ensure we have a proper tsconfig (create if missing)
-      - name: Ensure tsconfig.json
-        run: |
-          if [ ! -f tsconfig.json ]; then
-            echo '{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
-  },
-  "include": [
-    "behavior_pack/scripts/**/*.ts",
-    "node_modules/bc-minecraft-bedrock-types/index.d.ts"
-  ]
-}' > tsconfig.json
-          fi
+      # 4. Install Bedrock TS types
+      - name: Install Minecraft Bedrock TS types
+        run: npm install bc-minecraft-bedrock-types --save-dev
 
-      # 5️⃣ Run TypeScript type check (no emit)
+      # 5. Run TypeScript type check
       - name: TypeScript check
         run: npx tsc --noEmit
 
-      # 6️⃣ Setup Python
+      # 6. Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 7️⃣ Install Python dependencies
+      # 7. Install Python dependencies
       - name: Install Python dependencies
         run: pip install pillow rembg
 
-      # 8️⃣ Convert AI images → Minecraft textures & validate
+      # 8. Convert AI images → Minecraft textures & validate
       - name: Convert textures & validate add-on
         run: python tools/convert_and_check.py
 
-      # 9️⃣ Debug: show generated files
+      # 9. Debug: show generated files
       - name: Show generated files
         run: ls -R resource_pack
 
-      # 🔟 Package .mcpack
+      # 10. Package .mcpack
       - name: Package addon
         run: |
           mkdir -p build
@@ -74,7 +57,7 @@ jobs:
           cd build
           zip -r ../addon.mcpack .
 
-      # 1️⃣1️⃣ Upload the packaged .mcpack
+      # 11. Upload the packaged .mcpack
       - name: Upload mcpack
         uses: actions/upload-artifact@v4
         with:

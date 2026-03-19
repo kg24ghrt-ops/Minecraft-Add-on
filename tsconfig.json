@@ -9,7 +9,11 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@minecraft/*": ["node_modules/bc-minecraft-bedrock-types/*"]
+      "@minecraft/server": ["node_modules/bc-minecraft-bedrock-types/server"],
+      "@minecraft/server-ui": ["node_modules/bc-minecraft-bedrock-types/server-ui"],
+      "@minecraft/server-admin": ["node_modules/bc-minecraft-bedrock-types/server-admin"],
+      "@minecraft/server-net": ["node_modules/bc-minecraft-bedrock-types/server-net"],
+      "@minecraft/debug-utilities": ["node_modules/bc-minecraft-bedrock-types/debug-utilities"]
     }
   },
   "include": ["behavior_pack/scripts/**/*.ts"]

@@ -1,55 +1,155 @@
-import { world, system } from "@minecraft/server";
+import { 
+    world, 
+    system, 
+    EntityDamageCause, 
+    Player, 
+    ItemStack, 
+    Vector3, 
+    Dimension, 
+    Entity, 
+    EntityRaycastOptions, 
+    BlockRaycastOptions,
+    ItemUseBeforeEvent,
+    PlayerLeaveAfterEvent,
+    EntityHitEntityAfterEvent,
+    EntityRaycastHit
+} from "@minecraft/server";
 
-// Configuration
-const PROJECTILE_ID = "custom:bullet";
-const PISTOL_ID = "custom:pistol";
-const BULLET_SPEED = 4.0; // Fast projectile speed
-const DAMAGE_AMOUNT = 6;  // 3 hearts of damage
+/**
+ * CONFIGURATION Constants with explicit typing
+ */
+const PISTOL_ID: string = "custom:pistol";
+const BULLET_ENTITY: string = "custom:bullet";
+const DAMAGE_AMOUNT: number = 6; 
+const MAX_RANGE: number = 60;
+const COOLDOWN_TICKS: number = 4;
 
-world.beforeEvents.itemUse.subscribe((event) => {
-    const { itemStack, source: player } = event;
+/**
+ * Map to track player cooldowns. 
+ * Key: Player ID (string), Value: Last fired tick (number)
+ */
+const playerCooldowns: Map<string, number> = new Map();
 
-    // Check if the item used is our custom pistol
-    if (itemStack.typeId === PISTOL_ID) {
-        
-        // Use system.run to execute commands/spawning outside the 'before' event read-only state
-        system.run(() => {
-            const headLocation = player.getHeadLocation();
-            const viewDirection = player.getViewDirection();
+/**
+ * Logic for handling the item use (firing the pistol)
+ */
+world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
+    const itemStack: ItemStack | undefined = event.itemStack;
+    const player: Player = event.source;
 
-            // Spawn the bullet slightly in front of the player's face
-            const spawnLoc = {
-                x: headLocation.x + viewDirection.x * 1.5,
-                y: headLocation.y + viewDirection.y * 1.5,
-                z: headLocation.z + viewDirection.z * 1.5
-            };
+    // 1. Validation Guard
+    if (!itemStack || itemStack.typeId !== PISTOL_ID) return;
 
-            const bullet = player.dimension.spawnEntity(PROJECTILE_ID, spawnLoc);
+    // 2. Cooldown Validation using system ticks
+    const currentTick: number = system.currentTick;
+    const lastFiredTick: number = playerCooldowns.get(player.id) ?? 0;
+
+    if (currentTick - lastFiredTick < COOLDOWN_TICKS) {
+        return;
+    }
+
+    // Update cooldown record
+    playerCooldowns.set(player.id, currentTick);
+
+    // 3. Deferred Execution to exit Read-Only state
+    system.run((): void => {
+        if (!player.isValid()) return;
+
+        const dimension: Dimension = player.dimension;
+        const headLoc: Vector3 = player.getHeadLocation();
+        const viewVec: Vector3 = player.getViewDirection();
+
+        // Calculate a safe spawn position slightly ahead of the player
+        const spawnPos: Vector3 = {
+            x: headLoc.x + viewVec.x * 1.2,
+            y: headLoc.y + viewVec.y * 1.2 - 0.1,
+            z: headLoc.z + viewVec.z * 1.2
+        };
+
+        /**
+         * RAYCAST: HIT DETECTION (INSTANT HIT)
+         */
+        const rayOptions: EntityRaycastOptions = {
+            maxDistance: MAX_RANGE,
+            includePassableBlocks: false,
+            includeLiquidBlocks: false
+        };
+
+        const blockOptions: BlockRaycastOptions = {
+            maxDistance: MAX_RANGE,
+            includePassableBlocks: false,
+            includeLiquidBlocks: false
+        };
+
+        // Get hits and filter out the shooter to prevent self-hitting
+        const entityHits: EntityRaycastHit[] = player.getEntitiesFromViewDirection(rayOptions);
+        const validHit: EntityRaycastHit | undefined = entityHits.find(hit => hit.entity.id !== player.id);
+
+        // Check for block collision
+        const blockHit = player.getBlockFromViewDirection(blockOptions);
+
+        // Determine if we hit an entity before a block
+        if (validHit && (!blockHit || validHit.distance < blockHit.distance)) {
+            const target: Entity = validHit.entity;
+            if (target.isValid()) {
+                target.applyDamage(DAMAGE_AMOUNT, {
+                    cause: EntityDamageCause.projectile,
+                    damagingEntity: player
+                });
+                dimension.spawnParticle("minecraft:crit_particle", target.getHeadLocation());
+            }
+        } 
+        else if (blockHit) {
+            const hitLocation: Vector3 = blockHit.faceLocation;
+            dimension.spawnParticle("minecraft:large_exploding_particle", hitLocation);
+        }
+
+        /**
+         * VISUALS: TRACER SPAWNING
+         */
+        try {
+            const tracer: Entity = dimension.spawnEntity(BULLET_ENTITY, spawnPos);
             
-            // Set the velocity based on player's look direction
-            bullet.applyImpulse({
-                x: viewDirection.x * BULLET_SPEED,
-                y: viewDirection.y * BULLET_SPEED,
-                z: viewDirection.z * BULLET_SPEED
+            tracer.applyImpulse({
+                x: viewVec.x * 4,
+                y: viewVec.y * 4,
+                z: viewVec.z * 4
             });
 
-            // Play a sound effect
-            player.dimension.runCommand(`playsound random.explode @a ${spawnLoc.x} ${spawnLoc.y} ${spawnLoc.z} 0.5 2.0`);
+            // Cleanup tracer after 10 ticks to prevent entity lag
+            system.runTimeout((): void => {
+                if (tracer.isValid()) {
+                    tracer.remove();
+                }
+            }, 10);
+
+        } catch (error) {
+            console.warn(`[Pistol Error] Failed to spawn tracer: ${error}`);
+        }
+
+        // Play localized sound effect
+        const soundCmd: string = `playsound random.explode @a[p="${player.name}",c=1,r=16] ${spawnPos.x} ${spawnPos.y} ${spawnPos.z} 0.4 3.5`;
+        dimension.runCommand(soundCmd);
+    });
+});
+
+/**
+ * Entity Hit Logic (Optional: for physics-based projectiles)
+ */
+world.afterEvents.entityHitEntity.subscribe((event: EntityHitEntityAfterEvent): void => {
+    const projectile: Entity | undefined = event.damagingEntity;
+    const hitEntity: Entity = event.hitEntity;
+
+    if (projectile?.typeId === BULLET_ENTITY && hitEntity.isValid()) {
+        hitEntity.applyDamage(DAMAGE_AMOUNT, {
+            cause: EntityDamageCause.projectile
         });
     }
 });
 
-// Simple Hit Detection
-// Note: For high-speed bullets, a raycast-based hit detection is usually better,
-// but for a standard script setup, we listen for entity hits.
-world.afterEvents.entityHitEntity.subscribe((event) => {
-    const { projectile, hitEntity } = event;
-
-    // If our custom bullet hits something
-    if (projectile?.typeId === PROJECTILE_ID) {
-        hitEntity.applyDamage(DAMAGE_AMOUNT, {
-            cause: "projectile",
-            damagingEntity: projectile
-        });
-    }
+/**
+ * MEMORY CLEANUP: Remove player from Map when they leave
+ */
+world.afterEvents.playerLeave.subscribe((event: PlayerLeaveAfterEvent): void => {
+    playerCooldowns.delete(event.playerId);
 });

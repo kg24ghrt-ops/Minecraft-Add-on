@@ -1,11 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "module": "CommonJS",
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "strict": true,
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
     "baseUrl": ".",
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "paths": {
+      "@minecraft/*": ["node_modules/bc-minecraft-bedrock-types/*"]
+    }
   },
   "include": ["behavior_pack/scripts/**/*.ts"]
 }

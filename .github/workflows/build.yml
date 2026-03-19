@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
@@ -19,35 +19,39 @@ jobs:
         with:
           node-version: "18"
 
-      # 3️⃣ Install / update TypeScript and Minecraft types
-      - name: Install TypeScript + Minecraft API types
-        run: |
-          npm install typescript@latest --save-dev
-          npm install @minecraft/bedrock-types@latest --save-dev
+      # 3️⃣ Install TypeScript
+      - name: Install TypeScript
+        run: npm install typescript@latest --save-dev
 
-      # 4️⃣ Run TypeScript type check
+      # 4️⃣ Add local TypeScript declarations for Minecraft (no official types)
+      - name: Create local Minecraft TS declarations
+        run: |
+          mkdir -p types
+          echo 'declare module "@minecraft/server"; declare module "@minecraft/server-ui";' > types/minecraft.d.ts
+
+      # 5️⃣ Run TypeScript type check
       - name: TypeScript check
         run: npx tsc --noEmit
 
-      # 5️⃣ Setup Python
+      # 6️⃣ Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 6️⃣ Install Python dependencies
+      # 7️⃣ Install Python dependencies
       - name: Install Python dependencies
         run: pip install pillow rembg
 
-      # 7️⃣ Convert AI images → Minecraft textures & validate
+      # 8️⃣ Convert AI images → Minecraft textures & validate
       - name: Convert textures & validate add-on
         run: python tools/convert_and_check.py
 
-      # 8️⃣ Debug: show generated files
+      # 9️⃣ Debug: show generated files
       - name: Show generated files
         run: ls -R resource_pack
 
-      # 9️⃣ Package .mcpack
+      # 🔟 Package .mcpack
       - name: Package addon
         run: |
           mkdir -p build
@@ -55,7 +59,7 @@ jobs:
           cd build
           zip -r ../addon.mcpack .
 
-      # 🔟 Upload artifact
+      # 1️⃣1️⃣ Upload the packaged .mcpack
       - name: Upload mcpack
         uses: actions/upload-artifact@v4
         with:

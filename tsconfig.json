@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "node",
+    "target": "ES6",
+    "module": "CommonJS",
     "strict": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "baseUrl": ".",
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["behavior_pack/scripts/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["behavior_pack/scripts/**/*.ts"]
 }

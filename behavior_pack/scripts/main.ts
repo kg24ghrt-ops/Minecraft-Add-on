@@ -1,3 +1,4 @@
+/// <reference types="bc-minecraft-bedrock-types" />
 import { 
     world, 
     system, 
@@ -16,7 +17,7 @@ import {
 } from "@minecraft/server";
 
 /**
- * CONFIGURATION Constants with explicit typing
+ * CONFIGURATION
  */
 const PISTOL_ID: string = "custom:pistol";
 const BULLET_ENTITY: string = "custom:bullet";
@@ -26,7 +27,6 @@ const COOLDOWN_TICKS: number = 4;
 
 /**
  * Map to track player cooldowns. 
- * Key: Player ID (string), Value: Last fired tick (number)
  */
 const playerCooldowns: Map<string, number> = new Map();
 
@@ -40,7 +40,7 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
     // 1. Validation Guard
     if (!itemStack || itemStack.typeId !== PISTOL_ID) return;
 
-    // 2. Cooldown Validation using system ticks
+    // 2. Cooldown Validation
     const currentTick: number = system.currentTick;
     const lastFiredTick: number = playerCooldowns.get(player.id) ?? 0;
 
@@ -48,10 +48,9 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
         return;
     }
 
-    // Update cooldown record
     playerCooldowns.set(player.id, currentTick);
 
-    // 3. Deferred Execution to exit Read-Only state
+    // 3. Execution (Moves out of Read-Only state)
     system.run((): void => {
         if (!player.isValid()) return;
 
@@ -59,7 +58,7 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
         const headLoc: Vector3 = player.getHeadLocation();
         const viewVec: Vector3 = player.getViewDirection();
 
-        // Calculate a safe spawn position slightly ahead of the player
+        // Calculate spawn position (slightly in front of player)
         const spawnPos: Vector3 = {
             x: headLoc.x + viewVec.x * 1.2,
             y: headLoc.y + viewVec.y * 1.2 - 0.1,
@@ -67,7 +66,7 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
         };
 
         /**
-         * RAYCAST: HIT DETECTION (INSTANT HIT)
+         * RAYCAST: HIT DETECTION
          */
         const rayOptions: EntityRaycastOptions = {
             maxDistance: MAX_RANGE,
@@ -81,14 +80,10 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
             includeLiquidBlocks: false
         };
 
-        // Get hits and filter out the shooter to prevent self-hitting
         const entityHits: EntityRaycastHit[] = player.getEntitiesFromViewDirection(rayOptions);
         const validHit: EntityRaycastHit | undefined = entityHits.find(hit => hit.entity.id !== player.id);
-
-        // Check for block collision
         const blockHit = player.getBlockFromViewDirection(blockOptions);
 
-        // Determine if we hit an entity before a block
         if (validHit && (!blockHit || validHit.distance < blockHit.distance)) {
             const target: Entity = validHit.entity;
             if (target.isValid()) {
@@ -105,7 +100,7 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
         }
 
         /**
-         * VISUALS: TRACER SPAWNING
+         * VISUALS: TRACER
          */
         try {
             const tracer: Entity = dimension.spawnEntity(BULLET_ENTITY, spawnPos);
@@ -116,7 +111,6 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
                 z: viewVec.z * 4
             });
 
-            // Cleanup tracer after 10 ticks to prevent entity lag
             system.runTimeout((): void => {
                 if (tracer.isValid()) {
                     tracer.remove();
@@ -124,31 +118,18 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent): void => {
             }, 10);
 
         } catch (error) {
-            console.warn(`[Pistol Error] Failed to spawn tracer: ${error}`);
+            // console.warn will now be recognized due to lib: ["ES2020"] in tsconfig
+            console.warn(`[Pistol Error] Tracer failed: ${error}`);
         }
 
-        // Play localized sound effect
+        // Play localized sound
         const soundCmd: string = `playsound random.explode @a[p="${player.name}",c=1,r=16] ${spawnPos.x} ${spawnPos.y} ${spawnPos.z} 0.4 3.5`;
         dimension.runCommand(soundCmd);
     });
 });
 
 /**
- * Entity Hit Logic (Optional: for physics-based projectiles)
- */
-world.afterEvents.entityHitEntity.subscribe((event: EntityHitEntityAfterEvent): void => {
-    const projectile: Entity | undefined = event.damagingEntity;
-    const hitEntity: Entity = event.hitEntity;
-
-    if (projectile?.typeId === BULLET_ENTITY && hitEntity.isValid()) {
-        hitEntity.applyDamage(DAMAGE_AMOUNT, {
-            cause: EntityDamageCause.projectile
-        });
-    }
-});
-
-/**
- * MEMORY CLEANUP: Remove player from Map when they leave
+ * Cleanup: Remove player from Map when they leave
  */
 world.afterEvents.playerLeave.subscribe((event: PlayerLeaveAfterEvent): void => {
     playerCooldowns.delete(event.playerId);

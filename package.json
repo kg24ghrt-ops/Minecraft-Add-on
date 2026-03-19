@@ -1,6 +1,13 @@
 {
+  "name": "minecraft-pistol-addon",
+  "version": "1.0.0",
+  "description": "TypeScript source for Minecraft 1.21 Pistol Addon",
+  "scripts": {
+    "build": "tsc"
+  },
   "devDependencies": {
-    "bc-minecraft-bedrock-types": "^1.22.6-3",
-    "typescript": "^5.9.3"
+    "@minecraft/server": "1.13.0",
+    "bc-minecraft-bedrock-types": "latest",
+    "typescript": "^5.3.0"
   }
 }

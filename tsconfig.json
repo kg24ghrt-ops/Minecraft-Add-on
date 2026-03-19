@@ -1,37 +1,17 @@
 {
   "compilerOptions": {
-    /* Basic Options */
     "target": "ES2020",
     "module": "ESNext",
+    "lib": ["ES2020"], // Fixes the 'console' and 'Map' errors
     "moduleResolution": "Node",
-    "lib": ["ES2020"],
-    "declaration": false,
-    "sourceMap": false,
-    "outDir": "./behavior_pack/scripts", // Compiles .ts directly into the BP scripts folder
-    "removeComments": true,
-
-    /* Strict Type-Checking Options */
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-
-    /* Module Resolution Options */
     "baseUrl": ".",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    
-   /* Path Mapping for bc-minecraft-bedrock-types */
     "paths": {
       "@minecraft/server": ["node_modules/bc-minecraft-bedrock-types/server/index.d.ts"],
-      "@minecraft/server-ui": ["node_modules/bc-minecraft-bedrock-types/server-ui/index.d.ts"],
-      "@minecraft/server-admin": ["node_modules/bc-minecraft-bedrock-types/server-admin/index.d.ts"],
-      "@minecraft/server-net": ["node_modules/bc-minecraft-bedrock-types/server-net/index.d.ts"],
-      "@minecraft/debug-utilities": ["node_modules/bc-minecraft-bedrock-types/debug-utilities/index.d.ts"]
-    }
+      "@minecraft/server-ui": ["node_modules/bc-minecraft-bedrock-types/server-ui/index.d.ts"]
+    },
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "behavior_pack/scripts"
   },
-  "include": ["behavior_pack/scripts/**/*.ts"],
-  "exclude": ["node_modules", "**/RP/**"]
+  "include": ["behavior_pack/scripts/**/*.ts"]
 }

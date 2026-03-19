@@ -19,17 +19,32 @@ jobs:
         with:
           node-version: "18"
 
-      # 3️⃣ Install TypeScript
-      - name: Install TypeScript
-        run: npm install typescript@latest --save-dev
-
-      # 4️⃣ Add local TypeScript declarations for Minecraft (no official types)
-      - name: Create local Minecraft TS declarations
+      # 3️⃣ Install TypeScript + Bedrock TS types
+      - name: Install TypeScript & Bedrock types
         run: |
-          mkdir -p types
-          echo 'declare module "@minecraft/server"; declare module "@minecraft/server-ui";' > types/minecraft.d.ts
+          npm install typescript@latest --save-dev
+          npm install bc-minecraft-bedrock-types --save-dev
 
-      # 5️⃣ Run TypeScript type check
+      # 4️⃣ Ensure we have a proper tsconfig (create if missing)
+      - name: Ensure tsconfig.json
+        run: |
+          if [ ! -f tsconfig.json ]; then
+            echo '{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "behavior_pack/scripts/**/*.ts",
+    "node_modules/bc-minecraft-bedrock-types/index.d.ts"
+  ]
+}' > tsconfig.json
+          fi
+
+      # 5️⃣ Run TypeScript type check (no emit)
       - name: TypeScript check
         run: npx tsc --noEmit
 

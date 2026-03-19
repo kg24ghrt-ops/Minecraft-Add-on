@@ -9,57 +9,59 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js (for TypeScript)
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4 # Updated to v4
         with:
-          node-version: "18"
+          node-version: "20" # Use a more modern LTS
+          cache: 'npm' # Automatically caches node_modules if package-lock exists
 
-      # 3. Install TypeScript
-      - name: Install TypeScript
-        run: npm install typescript@latest --save-dev
+      # Install all dependencies at once
+      - name: Install Node Dependencies
+        run: npm install
 
-      # 4. Install Bedrock TS types
-      - name: Install Minecraft Bedrock TS types
-        run: npm install bc-minecraft-bedrock-types --save-dev
+      # Actually COMPILE the code into JavaScript for Minecraft to read
+      - name: Compile TypeScript to JS
+        run: npx tsc
 
-      # 5. Run TypeScript type check
-      - name: TypeScript check
-        run: npx tsc --noEmit
-
-      # 6. Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: 'pip' # Cache python dependencies too
 
-      # 7. Install Python dependencies
       - name: Install Python dependencies
         run: pip install pillow rembg
 
-      # 8. Convert AI images → Minecraft textures & validate
-      - name: Convert textures & validate add-on
+      - name: Convert AI images & process textures
         run: python tools/convert_and_check.py
 
-      # 9. Debug: show generated files
-      - name: Show generated files
-        run: ls -R resource_pack
-
-      # 10. Package .mcpack
-      - name: Package addon
+      # Packaging both Resource and Behavior packs into a single .mcaddon
+      # or separate .mcpacks
+      - name: Package Addon
         run: |
-          mkdir -p build
-          cp -r resource_pack build/
-          cd build
-          zip -r ../addon.mcpack .
+          mkdir -p build_output
+          
+          # Zip Resource Pack
+          cd resource_pack
+          zip -r ../build_output/pistol_rp.mcpack .
+          cd ..
+          
+          # Zip Behavior Pack (including the compiled JS from Step 5)
+          cd behavior_pack
+          zip -r ../build_output/pistol_bp.mcpack .
+          cd ..
+          
+          # Optional: Create an .mcaddon (contains both)
+          cd build_output
+          zip -r ../pistol_addon.mcaddon .
 
-      # 11. Upload the packaged .mcpack
-      - name: Upload mcpack
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: minecraft-addon
-          path: addon.mcpack
+          name: pistol-complete-addon
+          path: |
+            build_output/*.mcpack
+            pistol_addon.mcaddon
